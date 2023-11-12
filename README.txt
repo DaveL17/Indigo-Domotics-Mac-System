@@ -31,15 +31,15 @@ For Application :
 - launch/quit application.
 - as an option to force quit application
 
-Typical use of this plugin is managing an iTunes instance as a media server, on the same mac than the Indigo server. 
+Typical use of this plugin is managing an iTunes instance as a media server, on the same mac as the Indigo server.
 The kind of scenarios I use are :
 - Turn on the media service :
-   - When the house wakes up, a trigger turns on the raid disk (using a reay device)
+   - When the house wakes up, a trigger turns on the raid disk (using a relay device)
    - When the disk volume is mounted (i.e. disk volume device becomes on), a trigger launches iTunes by setting the Application device to On
    - Then you can use iTunes Plug-in or Airfoil plugin as usual
 - Turn off the media service :
    - When the house goes to sleep, a trigger sets the application device to off to stop iTunes,
    - When iTunes device is off, a trigger unmount the disk volume (i.e. sets disk volume device to off),
    - When the disk volume is off, then the raid drive relay device is set off.
-   
+
 More on the indigo Forum : http://forums.indigodomo.com/viewtopic.php?f=162&t=13678

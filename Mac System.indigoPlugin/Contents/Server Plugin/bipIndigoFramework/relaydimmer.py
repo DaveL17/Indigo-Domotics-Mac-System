@@ -2,71 +2,75 @@
 # -*- coding: utf-8 -*-
 ####################################################################################
 """ Basic Relay and dimmer helpers for indigo plugins
-    
+
     By Bernard Philippe (bip.philippe) (C) 2015
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
+    License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any
+    later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+    details.
 
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.#
+    You should have received a copy of the GNU General Public License along with this program; if not, write to the
+    Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.#
 """
 ####################################################################################
 
-import indigo
-import core
+from bipIndigoFramework import core
 
-_kDimmerRelayActionDict = {indigo.kDeviceGeneralAction.Beep:'Beep',
-indigo.kDeviceGeneralAction.EnergyUpdate:'EnergyUpdate',
-indigo.kDeviceGeneralAction.EnergyReset:'EnergyReset',
-indigo.kDeviceGeneralAction.RequestStatus:'RequestStatus',
-indigo.kDimmerRelayAction.AllLightsOff:'AllLightsOff',
-indigo.kDimmerRelayAction.AllLightsOn:'AllLightsOn',
-indigo.kDimmerRelayAction.AllOff:'AllOff',
-indigo.kDimmerRelayAction.BrightenBy:'BrightenBy',
-indigo.kDimmerRelayAction.DimBy:'DimBy',
-indigo.kDimmerRelayAction.SetBrightness:'SetBrightness',
-indigo.kDimmerRelayAction.Toggle:'Toggle',
-indigo.kDimmerRelayAction.TurnOff:'TurnOff',
-indigo.kDimmerRelayAction.TurnOn:'TurnOn'}
+try:
+    import indigo  # noqa
+except ImportError:
+    pass
+
+_kDimmerRelayActionDict = {
+    indigo.kDeviceGeneralAction.Beep: 'Beep',
+    indigo.kDeviceGeneralAction.EnergyUpdate: 'EnergyUpdate',
+    indigo.kDeviceGeneralAction.EnergyReset: 'EnergyReset',
+    indigo.kDeviceGeneralAction.RequestStatus: 'RequestStatus',
+    indigo.kDimmerRelayAction.AllLightsOff: 'AllLightsOff',
+    indigo.kDimmerRelayAction.AllLightsOn: 'AllLightsOn',
+    indigo.kDimmerRelayAction.AllOff: 'AllOff',
+    indigo.kDimmerRelayAction.BrightenBy: 'BrightenBy',
+    indigo.kDimmerRelayAction.DimBy: 'DimBy',
+    indigo.kDimmerRelayAction.SetBrightness: 'SetBrightness',
+    indigo.kDimmerRelayAction.Toggle: 'Toggle',
+    indigo.kDimmerRelayAction.TurnOff: 'TurnOff',
+    indigo.kDimmerRelayAction.TurnOn: 'TurnOn'
+}
+
 
 ################################################################################
-def startAction(thedevice, theaction):
+def start_action(dev, action):
     """ Check if the device is already in the required state - transform toggle in on or off
-        
+
         Args:
-            thedevice: current device
-            theaction: indigo action
+            dev: current device
+            action: indigo action
         Returns:
             None or action to provide
     """
 
-    theactionid = theaction.deviceAction
-    core.logger(traceLog = u'requesting device "%s" action %s' % (thedevice.name,_kDimmerRelayActionDict[theactionid]))
+    action_id = action.deviceAction
+    core.logger(traceLog=f'requesting device "{dev.name}" action {_kDimmerRelayActionDict[action_id]}')
     # work on toggling
-    if theactionid == indigo.kDimmerRelayAction.Toggle:
-        if thedevice.states['onOffState']:
-            theactionid = indigo.kDimmerRelayAction.TurnOff
+    if action_id == indigo.kDimmerRelayAction.Toggle:
+        if dev.states['onOffState']:
+            action_id = indigo.kDimmerRelayAction.TurnOff
         else:
-            theactionid = indigo.kDimmerRelayAction.TurnOn
+            action_id = indigo.kDimmerRelayAction.TurnOn
 
     # test if needed
-    if (theactionid == indigo.kDimmerRelayAction.TurnOn) and (thedevice.states['onOffState']):
-        core.logger(msgLog= u'device "%s" is already on' % (thedevice.name))
+    if action_id == indigo.kDimmerRelayAction.TurnOn and dev.states['onOffState']:
+        core.logger(msgLog=f'device "{dev.name}" is already on')
         return None
 
-    if (theactionid == indigo.kDimmerRelayAction.TurnOff) and not(thedevice.states['onOffState']):
-        core.logger(msgLog = u'device "%s" is already off' % (thedevice.name))
+    if action_id == indigo.kDimmerRelayAction.TurnOff and not dev.states['onOffState']:
+        core.logger(msgLog=f'device "{dev.name}" is already off')
         return None
 
     # go for the action
-    core.logger(msgLog = u'sent device "%s" action %s' % (thedevice.name,_kDimmerRelayActionDict[theactionid]))
-    return theactionid
+    core.logger(msgLog=f'sent device "{dev.name}" action {_kDimmerRelayActionDict[action_id]}')
+    return action_id

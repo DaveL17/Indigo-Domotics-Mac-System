@@ -6,23 +6,23 @@
     By Bernard Philippe (bip.philippe) (C) 2015
     upgradeDevice function inspired from Rogue Amoeba framework
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
+    License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any
+    later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+    details.
 
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.#
+    You should have received a copy of the GNU General Public License along with this program; if not, write to the
+    Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.#
 """
 ####################################################################################
 
-import indigo
+try:
+    import indigo  # noqa
+except ImportError:
+    pass
 
 MSG_MAIN_EVENTS = 1
 MSG_SECONDARY_EVENTS = 2
@@ -31,36 +31,42 @@ MSG_RAW_DEBUG = 8
 MSG_STATES_DEBUG = 16
 MSG_DEBUGS = (MSG_DEBUG | MSG_RAW_DEBUG | MSG_STATES_DEBUG)
 
-_debugStateDict = {u'logMainEvents':MSG_MAIN_EVENTS, u'logSecondaryEvents':MSG_SECONDARY_EVENTS, u'logDebug':MSG_DEBUG, u'logRawDebug':MSG_RAW_DEBUG, u'logStateDebug':MSG_STATES_DEBUG}
+_debugStateDict = {
+    'logMainEvents': MSG_MAIN_EVENTS,
+    'logSecondaryEvents': MSG_SECONDARY_EVENTS,
+    'logDebug': MSG_DEBUG,
+    'logRawDebug': MSG_RAW_DEBUG,
+    'logStateDebug': MSG_STATES_DEBUG
+}
 
-#ALL_DEBUGS = (MSG_DEBUG | MSG_RAW_DEBUG | MSG_STATES_DEBUG)
 
 ################################################################################
-def debugFlags(valueDict):
-    """ Get proporty value of standard indigo debug and an extra raw debug flag (plugin value)
+def debug_flags(valueDict):
+    """ Get property value of standard indigo debug and an extra raw debug flag (plugin value)
 
         Args:
-            valueDict: indigo dictionnary containing the following keys
+            valueDict: indigo dictionary containing the following keys
         Keys:
             logLevel: level of messaging
     """
     try:
-        thelevel = int(valueDict[u'logLevel'])
+        thelevel = int(valueDict['logLevel'])
     except:
         thelevel = MSG_MAIN_EVENTS
 
     if thelevel == 99:
         indigo.activePlugin.logLevel = 0
-        for key,value in _debugStateDict.iteritems():
+        for key, value in _debugStateDict.items():
             if valueDict[key]:
-                indigo.activePlugin.logLevel = indigo.activePlugin.logLevel | value
+                # indigo.activePlugin.logLevel = indigo.activePlugin.logLevel | value
+                indigo.activePlugin.logLevel |= value
     else:
         indigo.activePlugin.logLevel = thelevel
-        for key,value in _debugStateDict.iteritems():
+        for key, value in _debugStateDict.items():
             if thelevel & value:
-                valueDict[key]=True
+                valueDict[key] = True
             else:
-                valueDict[key]=False
+                valueDict[key] = False
 
     if indigo.activePlugin.logLevel & MSG_DEBUGS:
         indigo.activePlugin.debug = True
@@ -71,7 +77,7 @@ def debugFlags(valueDict):
 
 
 ########################################
-def logger(traceLog = None, traceRaw = None, msgLog = None, errLog = None, isMain=True ):
+def logger(traceLog=None, traceRaw=None, msgLog=None, errLog=None, isMain=True):
     """ Logger function extending the standard indigo log functions
 
         Args:
@@ -89,8 +95,8 @@ def logger(traceLog = None, traceRaw = None, msgLog = None, errLog = None, isMai
 
         Messages are output in this order:
         - traceLog or traceRaw as they should detail what is going to be done
-        - errLog as it should describe an error that occured
-        - msgLog as it should conclude a successfull process
+        - errLog as it should describe an error that occurred
+        - msgLog as it should conclude a successful process
     """
 
     # debug messages
@@ -115,15 +121,16 @@ def strutf8(data):
         Args:
         data: input data (any type)
         Returns:
-        unicode text
+        text
         """
-    if type(data) is str:
+    # indigo.server.log(f"strutf8 > data: {data}", type="debug")
+
+    if isinstance(data, bytes):
         data = data.decode('utf-8')
-    elif type(data) is unicode:
-        pass
     else:
-        data = str(data).decode('utf-8')
+        pass
     return data
+
 
 ########################################
 def formatdump(data):
@@ -136,38 +143,39 @@ def formatdump(data):
     """
 
     if data is None:
-        return u'None'
-    elif type(data) in (str,unicode):
-        return u"'"+data+u"'"
+        return 'None'
+    elif isinstance(data, str):
+        return "'"+data+"'"
     else:
         return data
 
 
 ########################################
-def dumpdict(thedict, theformat=u'"%s" is %s', ifempty='', excludeKeys= (), level=MSG_MAIN_EVENTS):
-    """ Dump a dictionnary,
+def dumpdict(thedict, theformat='"%s" is %s', ifempty='', excludeKeys=(), level=MSG_MAIN_EVENTS):
+    """ Dump a dictionary,
 
         Args:
-            thedict: dictionnary object
+            thedict: dictionary object
             theformat: formatting string
             ifempty: text displayed if empty
+            excludeKeys: ()
             level: debug level needed
     """
 
     if indigo.activePlugin.logLevel & level:
-        if len(thedict)>0:
-            for thekey,thevalue in thedict.iteritems():
+        if len(thedict) > 0:
+            for thekey, thevalue in thedict.items():
                 if thekey not in excludeKeys:
                     if level & MSG_DEBUGS:
                         indigo.activePlugin.debugLog(theformat % (thekey, formatdump(thevalue)))
                     else:
                         indigo.server.log(theformat % (thekey, formatdump(thevalue)))
-        elif len(ifempty)>0:
+        elif len(ifempty) > 0:
             indigo.server.log(strutf8(ifempty))
 
 
 ########################################
-def dumplist(thelist, theformat=u'"%s"', ifempty='', level=MSG_MAIN_EVENTS):
+def dumplist(thelist, theformat='"%s"', ifempty='', level=MSG_MAIN_EVENTS):
     """ Dump a list
 
         Args:
@@ -178,227 +186,235 @@ def dumplist(thelist, theformat=u'"%s"', ifempty='', level=MSG_MAIN_EVENTS):
         """
 
     if indigo.activePlugin.logLevel & level:
-        if len(thelist)>0:
+        if len(thelist) > 0:
             for thevalue in thelist:
                 if level & MSG_DEBUGS:
                     indigo.activePlugin.debugLog(theformat % (formatdump(thevalue)))
                 else:
                     indigo.server.log(theformat % (formatdump(thevalue)))
-        elif len(ifempty)>0:
+        elif len(ifempty) > 0:
             indigo.server.log(strutf8(ifempty))
+
 
 ########################################
 def dumppluginproperties():
     """ Dump plugin properties
     """
 
-    dumpdict(indigo.activePlugin.pluginPrefs,u'Plugin property %s is %s', level=MSG_DEBUG)
+    dumpdict(indigo.activePlugin.pluginPrefs, 'Plugin property %s is %s', level=MSG_DEBUG)
+
 
 ########################################
-def dumpdevicestates(thedevice):
+def dumpdevicestates(dev):
     """ Dump device states
 
         Args:
-            thedevice: device object
+            dev: device object
     """
 
-    dumpdict(thedevice.states,u'"'+thedevice.name+'" state %s is %s', level=MSG_DEBUG)
+    dumpdict(dev.states, '"' + dev.name + '" state %s is %s', level=MSG_DEBUG)
+
 
 ########################################
-def dumpdeviceproperties(thedevice):
+def dumpdeviceproperties(dev):
     """ Dump device properties
 
         Args:
-            thedevice: device object
+            dev: device object
     """
 
-    dumpdict(thedevice.pluginProps, u'"' + thedevice.name + '" property %s is %s', level=MSG_DEBUG)
+    dumpdict(dev.pluginProps, '"' + dev.name + '" property %s is %s', level=MSG_DEBUG)
+
 
 ########################################
-def updatestates(thedevice, thevaluesDict):
+def updatestates(dev, thevaluesDict):
     """ Update device states on server and log if changed
 
         Args:
-            thedevice: device object
-            thevaluesDict: python dictionnay of the states names and values
+            dev: device object
+            thevaluesDict: python dictionary of the states names and values
         Returns:
-            Python dictionnary of the states names and values that have been changed
+            Python dictionary of the states names and values that have been changed
     """
 
     updateDict = {}
 
-    for thekey,thevalue in thevaluesDict.iteritems():
-        theactualvalue=thedevice.states[thekey]
-        if type(theactualvalue) is str:
-            theactualvalue = theactualvalue.decode('utf-8')
-        if type(thevalue) is str:
-            thevalue=thevalue.decode('utf-8')
+    for thekey, thevalue in thevaluesDict.items():
+        theactualvalue = dev.states[thekey]
+        if isinstance(theactualvalue, str):
+            theactualvalue = theactualvalue
+        if isinstance(thevalue, str):
+            thevalue = thevalue
 
-        if theactualvalue != thevalue :
-            logger(traceRaw = u'"%s" %s value : %s != %s' % (thedevice.name, thekey, formatdump(thedevice.states[thekey]),formatdump(thevalue)))
-            thedevice.updateStateOnServer(key=thekey, value=thevalue)
-            updateDict[thekey]=thevalue
+        if theactualvalue != thevalue:
+            # indigo.server.log(f"core.py > updatestates: key={thekey} value={thevalue}", type="debug")
+            logger(traceRaw=f'"{dev.name}" {thekey} value : {formatdump(dev.states[thekey])} != {formatdump(thevalue)}')
+            dev.updateStateOnServer(key=thekey, value=thevalue)
+            updateDict[thekey] = thevalue
         else:
-            logger(traceRaw = u'"%s" %s value : %s == %s' % (thedevice.name, thekey, formatdump(thedevice.states[thekey]),formatdump(thevalue)))
+            logger(traceRaw=f'"{dev.name}" {thekey} value : {formatdump(dev.states[thekey])} == {formatdump(thevalue)}')
 
-    if len(updateDict)>0:
+    if len(updateDict) > 0:
         indigo.activePlugin.sleep(0.2)
-        if (thedevice.displayStateId in updateDict):
+        if dev.displayStateId in updateDict:
             thelevel = MSG_MAIN_EVENTS
         else:
             thelevel = MSG_SECONDARY_EVENTS
-        dumpdict(updateDict,theformat=u'received "'+thedevice.name+'" status %s update to %s', level=thelevel)
+        dumpdict(updateDict, theformat='received "' + dev.name + '" status %s update to %s', level=thelevel)
 
     return updateDict
 
 
 ########################################
-def specialimage(thedevice, thekey, thedict, theimagedict):
+def specialimage(dev, thekey, thedict, theimagedict):
     """ Set special image according device state - or to auto if no value defined in theimagedict
 
         Args:
-            thedevice: device object
+            dev: device object
             thekey : state key to choose the image
-            thedict : dictionnary of key,value (ie : an update dictionary as returned by updatestates)
-            theimagedict: python dictionnay of the states names and image (enumeration)
+            thedict : dictionary of key,value (ie : an update dictionary as returned by updatestates)
+            theimagedict: python dictionary of the states names and image (enumeration)
     """
 
     if thekey in thedict:
         if thedict[thekey] in theimagedict:
-            logger(traceLog = u'device "%s" has special image for %s with vakue %s' % (thedevice.name, thekey, formatdump(thedict[thekey])))
-            thedevice.updateStateImageOnServer(theimagedict[thedict[thekey]])
+            logger(traceLog=f'device "{dev.name}" has special image for {thekey} with value {formatdump(thedict[thekey])}')
+            dev.updateStateImageOnServer(theimagedict[thedict[thekey]])
         else:
-            logger(traceLog = u'device "%s" has automatic image for %s with value %s' % (thedevice.name, thekey, formatdump(thedict[thekey])))
-            thedevice.updateStateImageOnServer(indigo.kStateImageSel.Auto)
+            logger(traceLog=f'device "{dev.name}" has automatic image for {thekey} with value {formatdump(thedict[thekey])}')
+            dev.updateStateImageOnServer(indigo.kStateImageSel.Auto)
 
 
 ########################################
-def updatedeviceprops(thedevice, thevaluesDict):
+def updatedeviceprops(dev, values_dict):
     """ Update device properties on server and log if changed
 
         Args:
-            thedevice: device object
-            thevaluesDict: python dictionnay of the states names and values
+            dev: device object
+            values_dict: python dictionary of the states names and values
         Returns:
-            Python dictionnary of the states names and values that have been changed
+            Python dictionary of the states names and values that have been changed
     """
+    update_dict = {}
+    local_props = dev.pluginProps
 
-    updateDict = {}
-    localprops = thedevice.pluginProps
+    for key, value in values_dict.items():
+        actual_value = local_props[key]
+        if isinstance(actual_value, bytes):
+            actual_value = actual_value.decode('utf-8')
+        if isinstance(value, bytes):
+            value = value.decode('utf-8')
 
-    for thekey,thevalue in thevaluesDict.iteritems():
-        theactualvalue=localprops[thekey]
-        if type(theactualvalue) is str:
-            theactualvalue = theactualvalue.decode('utf-8')
-        if type(thevalue) is str:
-            thevalue=thevalue.decode('utf-8')
-
-        if theactualvalue != thevalue :
-            logger(traceRaw = u'"%s" value : %s <> %s' % (thekey, formatdump(localprops[thekey]),formatdump(thevalue)))
-            localprops.update({thekey:thevalue})
-            updateDict[thekey]=thevalue
+        if actual_value != value:
+            logger(traceRaw=f'"{key}" value : {formatdump(local_props[key])} <> {formatdump(value)}')
+            local_props.update({key: value})
+            update_dict[key] = value
         else:
-            logger(traceRaw = u'"%s" value : %s == %s' % (thekey, formatdump(localprops[thekey]),formatdump(thevalue)))
+            logger(traceRaw=f'"{key}" value : {formatdump(local_props[key])} == {formatdump(value)}')
 
-        if len(updateDict)>0:
+        if len(update_dict) > 0:
             indigo.activePlugin.sleep(0.2)
-            dumpdict(updateDict,theformat=u'"'+thedevice.name+'" property %s updated to %s', level=MSG_MAIN_EVENTS)
+            dumpdict(update_dict, theformat='"' + dev.name+'" property %s updated to %s', level=MSG_MAIN_EVENTS)
 
-    return updateDict
-
+    return update_dict
 
 ########################################
-def updatepluginprops(thevaluesDict):
+def updatepluginprops(values_dict):
     """ Update plugin properties on server and log if changed
 
         Args:
-            theplugin: plugin object
-            thevaluesDict: python dictionnay of the states names and values
+            values_dict: python dictionary of the states names and values
         Returns:
-            Python dictionnary of the states names and values that have been changed
+            Python dictionary of the states names and values that have been changed
     """
+    update_dict = {}
 
-    updateDict = {}
-    for thekey,thevalue in thevaluesDict.iteritems():
-        theactualvalue=indigo.activePlugin.pluginPrefs[thekey]
-        if type(theactualvalue) is str:
-            theactualvalue = theactualvalue.decode('utf-8')
-        if type(thevalue) is str:
-            thevalue=thevalue.decode('utf-8')
+    for key, value in values_dict.items():
+        actual_value = indigo.activePlugin.pluginPrefs[key]
+        if isinstance(actual_value, bytes):
+            actual_value = actual_value.decode('utf-8')
 
-        if theactualvalue != thevalue:
-            logger(traceRaw = u'property %s value: %s != %s' % (thekey, formatdump(indigo.activePlugin.pluginPrefs[thekey]),formatdump(thevalue)))
-            indigo.activePlugin.pluginPrefs[thekey] = thevalue
-            updateDict[thekey]=thevalue
+        if isinstance(value, bytes):
+            value = value.decode('utf-8')
+
+        if actual_value != value:
+            logger(traceRaw=f'property {key} value: {formatdump(indigo.activePlugin.pluginPrefs[key])} != {formatdump(value)}')
+            indigo.activePlugin.pluginPrefs[key] = value
+            update_dict[key] = value
         else:
-            logger(traceRaw = u'property %s value: %s == %s' % (thekey, formatdump(indigo.activePlugin.pluginPrefs[thekey]),formatdump(thevalue)))
+            logger(traceRaw=f'property {key} value: {formatdump(indigo.activePlugin.pluginPrefs[key])} == {formatdump(value)}')
 
-        if len(updateDict)>0:
+        if len(update_dict) > 0:
             indigo.activePlugin.sleep(0.2)
-            dumpdict(updateDict,theformat=u'pluging property %s updated to %s', level=MSG_MAIN_EVENTS)
+            dumpdict(update_dict, theformat='pluging property %s updated to %s', level=MSG_MAIN_EVENTS)
 
-    return updateDict
+    return update_dict
 
 
 ########################################
-def upgradeDeviceProperties(thedevice, theUpgradePropertyDict):
+def upgradeDeviceProperties(dev, upgrade_property_dict):
     """ Update plugin properties on server and log if changed
         Inspired from Rogue Amoeba framework
 
         Args:
-            thedevice: device object
-            theUpgradePropertyDict: python dictionnay of the properties names and default values
+            dev: device object
+            upgrade_property_dict: python dictionary of the properties names and default values
 
-            Syntax of a theUpgradePropertyDict dictionnary item (a,c)
-                a: name of the property/device
-                c: value
+            Syntax of a theUpgradePropertyDict dictionary item (a,c): `a` is the name of the property/device, and `c` is
+            the value.
 
         Returns;
-            dictionnary of the updates
+            dictionary of the updates
     """
+    update_dict = {}
 
-    dumplist(theUpgradePropertyDict.keys(), u'"' + thedevice.name + u'" requires property %s',level=MSG_STATES_DEBUG)
+    plugin_props_copy = dev.pluginProps
 
-    theupdatedict={}
-    pluginPropsCopy = thedevice.pluginProps
-    for newPropertyDefn, newPropertyDefv in theUpgradePropertyDict.iteritems():
-        if not (newPropertyDefn in pluginPropsCopy):
-            logger(traceRaw=u'"%s" property update due to missing %s property with value: %s' % (thedevice.name,newPropertyDefn,formatdump(newPropertyDefv)))
-            pluginPropsCopy[newPropertyDefn] = newPropertyDefv
-            theupdatedict[newPropertyDefn] = newPropertyDefv
-    if len(theupdatedict)>0:
-        thedevice.replacePluginPropsOnServer(pluginPropsCopy)
-        dumpdict(theupdatedict, u'"' + thedevice.name + u'" property %s created with value %s',level=MSG_DEBUG)
-        logger(msgLog=u'"%s" new properties added' % thedevice.name)
+    dumplist(upgrade_property_dict.keys(), '"' + dev.name + '" requires property %s', level=MSG_STATES_DEBUG)
+
+    for new_property_defn, new_property_defv in upgrade_property_dict.items():
+        if not (new_property_defn in plugin_props_copy):
+            logger(traceRaw=f'"{dev.name}" property update due to missing {new_property_defn} property with value: '
+                            f'{formatdump(new_property_defv)}'
+                   )
+            plugin_props_copy[new_property_defn] = new_property_defv
+            update_dict[new_property_defn] = new_property_defv
+    if len(update_dict) > 0:
+        dev.replacePluginPropsOnServer(plugin_props_copy)
+        dumpdict(update_dict, '"' + dev.name + '" property %s created with value %s', level=MSG_DEBUG)
+        logger(msgLog=f'"{dev.name}" new properties added')
     else:
-        logger(msgLog=u'"%s" property list is up to date' % thedevice.name)
+        logger(msgLog=f'"{dev.name}" property list is up to date')
 
-    return theupdatedict
+    return update_dict
+
 
 ########################################
-def upgradeDeviceStates(thedevice, theUpgradeStatesList):
+def upgradeDeviceStates(dev, upgrade_states_list):
     """ Update plugin states on server and log if changed
         Inspired from Rogue Amoeba framework
 
         Args:
-            thedevice: device object
-            theUpgradeStatesList: python dictionnay of the states names
+            dev: device object
+            upgrade_states_list: python dictionary of the states names
 
         Returns;
             list of the updates
     """
+    update_list = ()
 
-    dumplist(theUpgradeStatesList, u'"' + thedevice.name + u'" requires state %s',level=MSG_STATES_DEBUG)
+    dumplist(upgrade_states_list, '"' + dev.name + '" requires state %s', level=MSG_STATES_DEBUG)
 
-    theupdatelist=()
-    for newStateName in theUpgradeStatesList:
-        if not (newStateName in self.indigoDevice.states):
-            logger(traceRaw=u'"%s" state %s missing' % (thedevice.name,newStateName))
-            theupdatelist = theupdatelist + newStateName
-    if len(theupdatelist)>0:
-        thedevice.stateListOrDisplayStateIdChanged();
-        dumplist(theupdatelist, u'"%s" states added' % (thedevice.name),level=MSG_DEBUG)
-        logger(msgLog=u'"%s" new states added' % thedevice.name)
+    for newStateName in upgrade_states_list:
+        # TODO: 'self' is not defined in this context. Trying blind fix
+        # if not (newStateName in self.indigoDevice.states):
+        if not (newStateName in dev.states):
+            logger(traceRaw=f'"{dev.name}" state {newStateName} missing')
+            update_list = update_list + newStateName
+    if len(update_list) > 0:
+        dev.stateListOrDisplayStateIdChanged()
+        dumplist(update_list, f'"{dev.name}" states added', level=MSG_DEBUG)
+        logger(msgLog=f'"{dev.name}" new states added')
     else:
-        logger(msgLog=u'"%s" state list is up to date' % thedevice.name)
-    return theupdatelist
+        logger(msgLog=f'"{dev.name}" state list is up to date')
+    return update_list
