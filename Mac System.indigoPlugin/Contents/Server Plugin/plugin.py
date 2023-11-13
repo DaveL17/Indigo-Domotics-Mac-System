@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 ####################################################################################
 """
-    Mac OS System plug-in
+    macOS System plug-in
     By Bernard Philippe (bip.philippe) (C) 2015
+    Updated to Python 3 by DaveL17
 
     This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
     License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any
@@ -194,7 +195,9 @@ class Plugin(indigo.PluginBase):
                 timeToSpin = nextDiskSpin.isTime()
                 if timeToSpin:
                     # get disk sleep value
-                    psvalue = shellscript.run("pmset -g | grep disksleep | sed -e s/[a-z]//g | sed -e 's/ //g'")
+                    psvalue = shellscript.run(
+                        pscript="pmset -g | grep disksleep | sed -e s/[a-z]//g | sed -e 's/ //g'"
+                    )
                     try:
                         psvalue = int(psvalue)
                     except:
@@ -315,16 +318,21 @@ class Plugin(indigo.PluginBase):
         ########################
         elif dev.deviceTypeId == 'bip.ms.volume':
             if (theactionid == indigo.kDimmerRelayAction.TurnOn) and (dev.states['VStatus'] == 'notmounted'):
-                shellscript.run("/usr/sbin/diskutil mount %s" % (dev.states['VolumeDevice']))
+                shellscript.run(
+                    pscript="/usr/sbin/diskutil mount %s" % (dev.states['VolumeDevice'])
+                )
             # status update will be done by runConcurrentThread
 
             elif theactionid == indigo.kDimmerRelayAction.TurnOff:
+                # status update will be done by runConcurrentThread
                 if dev.pluginProps['forceQuit']:
-                    shellscript.run("/usr/sbin/diskutil umount force %s" % (dev.states['VolumeDevice']))
-                    # status update will be done by runConcurrentThread
+                    shellscript.run(
+                        pscript="/usr/sbin/diskutil umount force %s" % (dev.states['VolumeDevice'])
+                    )
                 else:
-                    shellscript.run("/usr/sbin/diskutil umount %s" % (dev.states['VolumeDevice']))
-                    # status update will be done by runConcurrentThread
+                    shellscript.run(
+                        pscript="/usr/sbin/diskutil umount %s" % (dev.states['VolumeDevice'])
+                    )
 
     ########################################
     # other callbacks

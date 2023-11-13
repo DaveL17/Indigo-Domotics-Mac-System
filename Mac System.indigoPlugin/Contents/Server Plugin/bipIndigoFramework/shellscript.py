@@ -4,6 +4,7 @@
 """ shell script runner for Indigo plugins
 
     By Bernard Philippe (bip.philippe) (C) 2015
+    Updated to Python 3 by DaveL17
 
     This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
     License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any
@@ -65,9 +66,6 @@ def run(pscript, rule=None, akeys=None):
     )
     indigo.activePlugin.sleep(0.1)
     p_values, p_error = p.communicate()
-
-    # indigo.server.log(f"shellscript > run > p_values: {p_values} | p_error: {p_error}", type="debug")
-    # indigo.server.log(f"shellscript > run > rule: {rule} | akeys: {akeys}", type="debug")
 
     if len(p_error) > 0:
         # test if error

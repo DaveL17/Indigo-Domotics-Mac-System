@@ -4,6 +4,7 @@
 """
     macOS System plug-in interface module
     By Bernard Philippe (bip.philippe) (C) 2015
+    Updated to Python 3 by DaveL17
 
     This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
     License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any
@@ -44,7 +45,16 @@ def init():
 ##########
 # Application device
 ########################
-pStatusDict = {'I': 'idle', 'R': 'running', 'S': 'running', 'T': 'stopped', '': 'waiting', 'Z': 'zombie'}
+# Including corresponding man page definition.
+pStatusDict = {
+    'I': 'idle',                  # process that is idle (sleeping for longer than about 20 seconds)
+    'R': 'running',               # runnable process
+    'S': 'running',               # process that is sleeping for less than about 20 seconds
+    'T': 'stopped',               # stopped process
+    'U': 'uninterruptible wait',  # process in uninterruptible wait
+    '': 'waiting',                #
+    'Z': 'zombie'                 # dead process (a “zombie”)
+}
 
 
 def getProcessStatus(dev, values_dict):
@@ -57,7 +67,11 @@ def getProcessStatus(dev, values_dict):
             success: True if success, False if not
             values_dict updated with new data if success, equals to the input if not
     """
-    pslist = shellscript.run("ps -awxc -opid,state,args | egrep %s" % (pipes.quote(' ' + dev.pluginProps['ApplicationProcessName'] + '$')), _repProcessStatus, ['ProcessID', 'PStatus'])
+    pslist = shellscript.run(
+        pscript="ps -awxc -opid,state,args | egrep %s" % (pipes.quote(' ' + dev.pluginProps['ApplicationProcessName'] + '$')),
+        rule=_repProcessStatus,
+        akeys=['ProcessID', 'PStatus']
+    )
 
     if pslist['ProcessID'] == '':
         values_dict['onOffState'] = False
@@ -67,7 +81,8 @@ def getProcessStatus(dev, values_dict):
         values_dict['onOffState'] = True
         values_dict.update(pslist)
         # special update for process status
-        values_dict['PStatus'] = pStatusDict[values_dict['PStatus']]
+        p_status = values_dict['PStatus']
+        values_dict['PStatus'] = pStatusDict.get(p_status, f"unknown code - {p_status}")
 
     return True, values_dict
 
@@ -83,9 +98,9 @@ def getProcessData(dev, values_dict):
             values_dict updated with new data if success, equals to the input if not
     """
     pslist = shellscript.run(
-        f"ps -wxc -olstart,pcpu,pmem,etime -p{values_dict['ProcessID']} | sed 1d",
-        _repProcessData,
-        ['LStart', 'PCpu', 'PMem', 'ETime']
+        pscript=f"ps -wxc -olstart,pcpu,pmem,etime -p{values_dict['ProcessID']} | sed 1d",
+        rule=_repProcessData,
+        akeys=['LStart', 'PCpu', 'PMem', 'ETime']
     )
 
     if pslist['LStart'] == '':
@@ -128,7 +143,8 @@ def getVolumeStatus(dev, values_dict):
             values_dict updated with new data if success, equals to the input if not
     """
     # check if mounted
-    if shellscript.run("ls -1 /Volumes | grep %s" % (pipes.quote('^' + dev.pluginProps['VolumeID'] + '$'))) > '':
+    if shellscript.run(
+            pscript="ls -1 /Volumes | grep %s" % (pipes.quote('^' + dev.pluginProps['VolumeID'] + '$'))) > '':
         values_dict['onOffState'] = True
         values_dict['VStatus'] = "on"
     else:
@@ -147,7 +163,11 @@ def getVolumeData(dev, values_dict):
             success: True if success, False if not
             values_dict updated with new data if success, equals to the input if not
         """
-    pslist = shellscript.run("/usr/sbin/diskutil list | grep %s" % (pipes.quote(' ' + dev.pluginProps['VolumeID'] + '  ')), [(6, 32), (57, 67), (68, -1)], ['VolumeType', 'VolumeSize', 'VolumeDevice'])
+    pslist = shellscript.run(
+        pscript="/usr/sbin/diskutil list | grep %s" % (pipes.quote(' ' + dev.pluginProps['VolumeID'] + '  ')),
+        rule=[(6, 32), (57, 67), (68, -1)],
+        akeys=['VolumeType', 'VolumeSize', 'VolumeDevice']
+    )
 
     if pslist['VolumeDevice'] == '':
         values_dict['onOffState'] = False
@@ -155,7 +175,11 @@ def getVolumeData(dev, values_dict):
     else:
         values_dict.update(pslist)
         # find free space
-        pslist = shellscript.run("/bin/df | grep '%s'" % (values_dict['VolumeDevice']), _repVolumeData2, ['Used', 'Available'])
+        pslist = shellscript.run(
+            pscript="/bin/df | grep '%s'" % (values_dict['VolumeDevice']),
+            rule=_repVolumeData2,
+            akeys=['Used', 'Available']
+        )
         if pslist['Used'] != '':
             values_dict['pcUsed'] = (int(pslist['Used']) * 100) / (int(pslist['Used']) + int(pslist['Available']))
             values_dict['onOffState'] = True
@@ -179,7 +203,9 @@ def spinVolume(dev, values_dict):
         """
 
     if dev.states['VStatus'] == 'on' and dev.pluginProps['keepAwaken']:
-        psvalue = shellscript.run("touch %s" % (pipes.quote('/Volumes/' + dev.pluginProps['VolumeID'] + '/.spinner')))
+        psvalue = shellscript.run(
+            pscript="touch %s" % (pipes.quote('/Volumes/' + dev.pluginProps['VolumeID'] + '/.spinner'))
+        )
         if psvalue is None:
             return False, values_dict
         else:

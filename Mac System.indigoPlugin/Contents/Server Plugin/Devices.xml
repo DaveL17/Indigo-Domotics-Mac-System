@@ -59,7 +59,7 @@
         <Name>Application</Name>
         <ConfigUI>
             <Field id="labeltext" type="label">
-                <Label>This type of device is mainly dedicated to usual Mac OS X applications, i.e.: software with a .app extension, mainly installed in the Applications folder.</Label>
+                <Label>This type of device is mainly dedicated to usual macOS applications, i.e.: software with a .app extension, mainly installed in the Applications folder.</Label>
             </Field>
             <Field id="simpleSeparatorText" type="separator"/>
             <Field id="ApplicationID" type="textfield">
@@ -113,7 +113,7 @@
                 <Label>Close window process:</Label>
             </Field>
             <Field id="nothingLabel" type="label">
-                <Label></Label>
+                <Label/>
             </Field>
         </ConfigUI>
         <States>

@@ -4,6 +4,8 @@
 """ Basic Framework helpers for indigo plugins
 
     By Bernard Philippe (bip.philippe) (C) 2015
+    Updated to Python 3 by DaveL17
+
     upgradeDevice function inspired from Rogue Amoeba framework
 
     This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
@@ -41,39 +43,39 @@ _debugStateDict = {
 
 
 ################################################################################
-def debug_flags(valueDict):
+def debug_flags(values_dict):
     """ Get property value of standard indigo debug and an extra raw debug flag (plugin value)
 
         Args:
-            valueDict: indigo dictionary containing the following keys
+            values_dict: indigo dictionary containing the following keys
         Keys:
             logLevel: level of messaging
     """
     try:
-        thelevel = int(valueDict['logLevel'])
+        thelevel = int(values_dict['logLevel'])
     except:
         thelevel = MSG_MAIN_EVENTS
 
     if thelevel == 99:
         indigo.activePlugin.logLevel = 0
         for key, value in _debugStateDict.items():
-            if valueDict[key]:
+            if values_dict[key]:
                 # indigo.activePlugin.logLevel = indigo.activePlugin.logLevel | value
                 indigo.activePlugin.logLevel |= value
     else:
         indigo.activePlugin.logLevel = thelevel
         for key, value in _debugStateDict.items():
             if thelevel & value:
-                valueDict[key] = True
+                values_dict[key] = True
             else:
-                valueDict[key] = False
+                values_dict[key] = False
 
     if indigo.activePlugin.logLevel & MSG_DEBUGS:
         indigo.activePlugin.debug = True
     else:
         indigo.activePlugin.debug = False
 
-    return valueDict
+    return values_dict
 
 
 ########################################
@@ -134,7 +136,7 @@ def strutf8(data):
 
 ########################################
 def formatdump(data):
-    """ Generic replace function if data is empty and format with tyoe
+    """ Generic replace function if data is empty and format with type
 
         Args:
             data: input data (any type)
@@ -227,19 +229,19 @@ def dumpdeviceproperties(dev):
 
 
 ########################################
-def updatestates(dev, thevaluesDict):
+def updatestates(dev, values_dict):
     """ Update device states on server and log if changed
 
         Args:
             dev: device object
-            thevaluesDict: python dictionary of the states names and values
+            values_dict: python dictionary of the states names and values
         Returns:
             Python dictionary of the states names and values that have been changed
     """
 
-    updateDict = {}
+    update_dict = {}
 
-    for thekey, thevalue in thevaluesDict.items():
+    for thekey, thevalue in values_dict.items():
         theactualvalue = dev.states[thekey]
         if isinstance(theactualvalue, str):
             theactualvalue = theactualvalue
@@ -250,19 +252,19 @@ def updatestates(dev, thevaluesDict):
             # indigo.server.log(f"core.py > updatestates: key={thekey} value={thevalue}", type="debug")
             logger(traceRaw=f'"{dev.name}" {thekey} value : {formatdump(dev.states[thekey])} != {formatdump(thevalue)}')
             dev.updateStateOnServer(key=thekey, value=thevalue)
-            updateDict[thekey] = thevalue
+            update_dict[thekey] = thevalue
         else:
             logger(traceRaw=f'"{dev.name}" {thekey} value : {formatdump(dev.states[thekey])} == {formatdump(thevalue)}')
 
-    if len(updateDict) > 0:
+    if len(update_dict) > 0:
         indigo.activePlugin.sleep(0.2)
-        if dev.displayStateId in updateDict:
+        if dev.displayStateId in update_dict:
             thelevel = MSG_MAIN_EVENTS
         else:
             thelevel = MSG_SECONDARY_EVENTS
-        dumpdict(updateDict, theformat='received "' + dev.name + '" status %s update to %s', level=thelevel)
+        dumpdict(update_dict, theformat='received "' + dev.name + '" status %s update to %s', level=thelevel)
 
-    return updateDict
+    return update_dict
 
 
 ########################################
@@ -317,6 +319,7 @@ def updatedeviceprops(dev, values_dict):
             dumpdict(update_dict, theformat='"' + dev.name+'" property %s updated to %s', level=MSG_MAIN_EVENTS)
 
     return update_dict
+
 
 ########################################
 def updatepluginprops(values_dict):

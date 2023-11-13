@@ -4,6 +4,7 @@
 """ Basic Framework helpers for indigo plugins concurrentThread
 
     By Bernard Philippe (bip.philippe) (C) 2015
+    Updated to Python 3 by DaveL17
 
     This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
     License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any
@@ -92,7 +93,9 @@ def sleepWake():
 
 ########################################
 class dialogTimer(object):
-    """ Timer to be used in runConcurrentThread for dialogs that needs to be made less often that the runConcurrentThread pace
+    """
+    Timer to be used in runConcurrentThread for dialogs that needs to be made less often that the
+    runConcurrentThread pace
     """
     def __init__(self, timername, interval, initialinterval=0):
         """ Constructor
