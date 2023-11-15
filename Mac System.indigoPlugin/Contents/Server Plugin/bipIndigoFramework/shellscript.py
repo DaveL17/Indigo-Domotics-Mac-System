@@ -4,7 +4,6 @@
 """ shell script runner for Indigo plugins
 
     By Bernard Philippe (bip.philippe) (C) 2015
-    Updated to Python 3 by DaveL17
 
     This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
     License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any
@@ -21,7 +20,6 @@
 
 import subprocess
 from bipIndigoFramework import core
-# import re
 
 try:
     import indigo  # noqa
@@ -32,7 +30,6 @@ except ImportError:
 ########################################
 def init():
     """ Initiate some handlings """
-    pass
 
 
 ########################################
@@ -57,15 +54,10 @@ def run(pscript, rule=None, akeys=None):
 
     core.logger(traceRaw=f'going to call shell {pscript}', traceLog=f'going to call shell {log_script}...')
 
-    p = subprocess.Popen(
-        pscript,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=True,
-        close_fds=True
-    )
-    indigo.activePlugin.sleep(0.1)
-    p_values, p_error = p.communicate()
+    with subprocess.Popen(
+        pscript, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, close_fds=True) as proc:
+        indigo.activePlugin.sleep(0.1)
+        p_values, p_error = proc.communicate()
 
     if len(p_error) > 0:
         # test if error
@@ -84,7 +76,7 @@ def run(pscript, rule=None, akeys=None):
         # split using position
         return_value = {}
         for key, (firstchar, lastchar) in zip(akeys, rule):
-            return_value[key] = core.strutf8(p_values[firstchar:lastchar].strip())
+            return_value[key] = core.str_utf8(p_values[firstchar:lastchar].strip())
 
     elif isinstance(rule, str):
         # just use split
@@ -92,7 +84,7 @@ def run(pscript, rule=None, akeys=None):
         return_value = dict(zip(akeys, p_values.split(rule)))
         # for key, value in p_values.items():
         for key, value in return_value.items():
-            return_value[key] = core.strutf8(value.strip())
+            return_value[key] = core.str_utf8(value.strip())
     else:
         # split using regex
         return_value = {}
@@ -100,7 +92,7 @@ def run(pscript, rule=None, akeys=None):
             p_values = p_values.decode('utf-8')
 
             for key, value in zip(akeys, rule.match(p_values).groups()):
-                return_value[key] = core.strutf8(value.strip())
+                return_value[key] = core.str_utf8(value.strip())
         except:
             for key in akeys:
                 return_value[key] = ''

@@ -7,7 +7,6 @@
 	<Field id="infoLabel" type="label">
 		<Label>macOS System Plugin
 Developed by Bernard Philippe (bip.philippe)
-Updated to Python 3 by DaveL17
 </Label>
 	</Field>
     <Field type="textfield" id="disksleepTime" readonly="yes" defaultValue="0">

@@ -4,7 +4,6 @@
 """
     macOS System plug-in interface module
     By Bernard Philippe (bip.philippe) (C) 2015
-    Updated to Python 3 by DaveL17
 
     This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
     License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any
@@ -19,17 +18,15 @@
 """
 ####################################################################################
 
-import time
-# from bipIndigoFramework import core  #  unused
-from bipIndigoFramework import osascript
-from bipIndigoFramework import shellscript
 import re
 import pipes
+import time
+from bipIndigoFramework import osascript, shellscript
 
 try:
-    import indigo  # noqa
+    from shlex import quote as cmd_quote
 except ImportError:
-    pass
+    from pipes import quote as cmd_quote
 
 
 _repProcessStatus = re.compile(r" *([0-9]+) +(.).+$")
@@ -38,6 +35,7 @@ _repVolumeData2 = re.compile(r".+? [0-9]+ +([0-9]+) +([0-9]+) .+")
 
 
 def init():
+    """ Standard init method """
     osascript.init()
     shellscript.init()
 
@@ -67,10 +65,9 @@ def getProcessStatus(dev, values_dict):
             success: True if success, False if not
             values_dict updated with new data if success, equals to the input if not
     """
+    repProcessName = f" {dev.pluginProps['ApplicationProcessName']}( -psn[0-9_]*)*$"
     pslist = shellscript.run(
-        pscript="ps -awxc -opid,state,args | egrep %s" % (pipes.quote(' ' + dev.pluginProps['ApplicationProcessName'] + '$')),
-        rule=_repProcessStatus,
-        akeys=['ProcessID', 'PStatus']
+        f"ps -awxc -opid,state,args | egrep {cmd_quote(repProcessName)}", _repProcessStatus, ['ProcessID', 'PStatus']
     )
 
     if pslist['ProcessID'] == '':
@@ -87,7 +84,7 @@ def getProcessStatus(dev, values_dict):
     return True, values_dict
 
 
-def getProcessData(dev, values_dict):
+def getProcessData(values_dict):
     """ Searches for the task in system tasklist and returns states data
 
         Args:
@@ -143,8 +140,7 @@ def getVolumeStatus(dev, values_dict):
             values_dict updated with new data if success, equals to the input if not
     """
     # check if mounted
-    if shellscript.run(
-            pscript="ls -1 /Volumes | grep %s" % (pipes.quote('^' + dev.pluginProps['VolumeID'] + '$'))) > '':
+    if shellscript.run(pscript=f"ls -1 /Volumes | grep ^{pipes.quote(dev.pluginProps['VolumeID'])}$") > '':
         values_dict['onOffState'] = True
         values_dict['VStatus'] = "on"
     else:
@@ -164,7 +160,7 @@ def getVolumeData(dev, values_dict):
             values_dict updated with new data if success, equals to the input if not
         """
     pslist = shellscript.run(
-        pscript="/usr/sbin/diskutil list | grep %s" % (pipes.quote(' ' + dev.pluginProps['VolumeID'] + '  ')),
+        pscript=f"/usr/sbin/diskutil list | grep {pipes.quote(dev.pluginProps['VolumeID'])}",
         rule=[(6, 32), (57, 67), (68, -1)],
         akeys=['VolumeType', 'VolumeSize', 'VolumeDevice']
     )
@@ -176,9 +172,7 @@ def getVolumeData(dev, values_dict):
         values_dict.update(pslist)
         # find free space
         pslist = shellscript.run(
-            pscript="/bin/df | grep '%s'" % (values_dict['VolumeDevice']),
-            rule=_repVolumeData2,
-            akeys=['Used', 'Available']
+            pscript=f"/bin/df | grep '{values_dict['VolumeDevice']}'", rule=_repVolumeData2, akeys=['Used', 'Available']
         )
         if pslist['Used'] != '':
             values_dict['pcUsed'] = (int(pslist['Used']) * 100) / (int(pslist['Used']) + int(pslist['Available']))
@@ -203,11 +197,8 @@ def spinVolume(dev, values_dict):
         """
 
     if dev.states['VStatus'] == 'on' and dev.pluginProps['keepAwaken']:
-        psvalue = shellscript.run(
-            pscript="touch %s" % (pipes.quote('/Volumes/' + dev.pluginProps['VolumeID'] + '/.spinner'))
-        )
+        psvalue = shellscript.run(pscript=f"touch /Volumes/{pipes.quote(dev.pluginProps['VolumeID'])}/.spinner")
         if psvalue is None:
             return False, values_dict
-        else:
-            values_dict['LastPing'] = time.strftime('%c', time.localtime())
+        values_dict['LastPing'] = time.strftime('%c', time.localtime())
     return True, values_dict

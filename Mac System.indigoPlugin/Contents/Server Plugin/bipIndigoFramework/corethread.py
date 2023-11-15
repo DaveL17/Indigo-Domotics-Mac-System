@@ -4,7 +4,6 @@
 """ Basic Framework helpers for indigo plugins concurrentThread
 
     By Bernard Philippe (bip.philippe) (C) 2015
-    Updated to Python 3 by DaveL17
 
     This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
     License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any
@@ -19,9 +18,9 @@
 """
 ####################################################################################
 
-from bipIndigoFramework import core
 import time
 from threading import Timer
+from bipIndigoFramework import core
 try:
     import indigo  # noqa
 except ImportError:
@@ -30,7 +29,7 @@ except ImportError:
 
 def init():
     """ Initiate """
-    indigo.activePlugin._requestedUpdate = dict()
+    indigo.activePlugin._requestedUpdate = {}
 
 
 ########################################
@@ -41,8 +40,7 @@ def setUpdateRequest(dev, nbTime=1):
         nbTime: ?
         dev: current device
     """
-
-    core.logger(traceLog='Device "%s" has %s update requests stacked' % (dev.name, nbTime))
+    core.logger(traceLog=f'Device "{dev.name}" has {nbTime} update requests stacked')
     indigo.activePlugin._requestedUpdate[dev.id] = nbTime  # noqa
 
 
@@ -55,10 +53,8 @@ def isUpdateRequested(dev):
         Returns:
             True is updateRequested
         """
-
     if dev.id in indigo.activePlugin._requestedUpdate:  # noqa
         if indigo.activePlugin._requestedUpdate[dev.id] > 0:  # noqa
-            # indigo.activePlugin._requestedUpdate[dev.id] = indigo.activePlugin._requestedUpdate[dev.id] - 1
             indigo.activePlugin._requestedUpdate[dev.id] -= 1  # noqa
             core.logger(traceLog=f'Device "{dev.name}" is going to process an update request')
             return True
@@ -73,7 +69,6 @@ def sleepNext(sleep_time):
         Args:
             sleep_time: time in seconds between two dialog calls
     """
-
     next_delay = sleep_time - (time.time() - indigo.activePlugin.wakeup)
 
     next_delay = round(next_delay, 2)
@@ -87,29 +82,29 @@ def sleepNext(sleep_time):
 def sleepWake():
     """ Take the time before one ConcurrentThread run
     """
-
     indigo.activePlugin.wakeup = time.time()
 
 
 ########################################
-class dialogTimer(object):
+# class dialogTimer(object):
+class dialogTimer():
     """
-    Timer to be used in runConcurrentThread for dialogs that needs to be made less often that the
-    runConcurrentThread pace
+    Timer to be used in run_concurrent_thread for dialogs that needs to be made less often that the
+    run_concurrent_thread pace
     """
-    def __init__(self, timername, interval, initialinterval=0):
+    def __init__(self, timer_name, interval, initial_interval=0):
         """ Constructor
 
             Args:
-                timername : name of the timer (for logging use)
+                timer_name : name of the timer (for logging use)
                 interval: interval in seconds
-                initialinterval : first interval in seconds (ignored if 0)
+                initial_interval : first interval in seconds (ignored if 0)
             Returns:
                 dialogTimer class instance
         """
         self._timer     = None
-        self.timername = timername
-        self.initialinterval = initialinterval
+        self.timername = timer_name
+        self.initialinterval = initial_interval
         self.interval   = interval
         self.timeElapsed = True
         core.logger(traceLog=f'initiating dialog timer "{self.timername}" on a {interval} seconds pace')
@@ -155,5 +150,4 @@ class dialogTimer(object):
         if self.timeElapsed:
             self.timeElapsed = False
             return True
-        else:
-            return False
+        return False

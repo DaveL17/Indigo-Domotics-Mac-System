@@ -4,7 +4,6 @@
 """ Applescript helper for indigo Plugin
 
     By Bernard Philippe (bip.philippe) (C) 2015
-    Updated to Python 3 by DaveL17
 
     This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
     License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any
@@ -19,9 +18,9 @@
 """
 ####################################################################################
 
+import re
 import subprocess
 from bipIndigoFramework import core
-import re
 
 try:
     import indigo  # noqa
@@ -36,8 +35,8 @@ _valueConvertDict = {'True': True, 'true': True, 'False': False, 'false': False}
 def init():
     """ Initiate special applescript error handling
     """
-    indigo.activePlugin._retryLog = dict()
-    indigo.activePlugin._errorMsg = dict()
+    indigo.activePlugin._retryLog = {}
+    indigo.activePlugin._errorMsg = {}
 
 
 ########################################
@@ -57,92 +56,88 @@ def run(ascript, akeys=None, errorHandling=None):
             or None if error
     """
 
-    osaname = ascript.splitlines()[0]
+    osa_name = ascript.splitlines()[0]
     core.logger(
         traceRaw=f'going to call applescript {ascript}',
-        traceLog=f'going to call applescript {osaname}'
+        traceLog=f'going to call applescript {osa_name}'
     )
 
-    osa = subprocess.Popen(
-        ['osascript', '-e', ascript],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        close_fds=True
-    )
-    indigo.activePlugin.sleep(0.25)
-    osavalues, osaerror = osa.communicate()
+    with subprocess.Popen(
+        ['osascript', '-e', ascript], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True) as osa:
+        indigo.activePlugin.sleep(0.25)
+        osa_values, osa_error = osa.communicate()
 
     # error management
-    if len(osaerror) > 0:
-        osaerror2 = osaerror[:-1].decode('utf-8')
+    if len(osa_error) > 0:
+        osa_error_2 = osa_error[:-1].decode('utf-8')
         # filter standard errors due to old mac configuration
-        osaerror = ''
-        filterederror = ''
-        for theline in osaerror2.splitlines():
-            if _repCloseAppErrorFilter.search(theline) is None:
-                osaerror = osaerror + theline + '\n'
+        osa_error = ''
+        filtered_error = ''
+        for line in osa_error_2.splitlines():
+            if _repCloseAppErrorFilter.search(line) is None:
+                osa_error = osa_error + line + '\n'
             else:
-                filterederror = filterederror + theline + '\n'
-        if filterederror > '':
+                filtered_error = filtered_error + line + '\n'
+        if filtered_error > '':
             core.logger(
-                traceLog=f'warning: applescript {osaname} error filtered as not significant',
-                traceRaw=f'warning: applescript {osaname} following error filtered: {filterederror[:-1]}'
+                traceLog=f'warning: applescript {osa_name} error filtered as not significant',
+                traceRaw=f'warning: applescript {osa_name} following error filtered: {filtered_error[:-1]}'
             )
 
     # test if error
-    if len(osaerror) > 0:
-        osaerror = osaerror[:-1]
+    if len(osa_error) > 0:
+        osa_error = osa_error[:-1]
         if errorHandling is None:
-            core.logger(traceLog='no error handling', errLog=f'applescript {osaname} failed because {osaerror}')
+            core.logger(traceLog='no error handling', errLog=f'applescript {osa_name} failed because {osa_error}')
             return None
         else:
-            core.logger(traceLog=f'applescript {osaname} error handling {type(errorHandling)} because {osaerror}')
+            core.logger(traceLog=f'applescript {osa_name} error handling {type(errorHandling)} because {osa_error}')
             if isinstance(errorHandling, int):
                 # test if dictionary exists
-                if osaname in indigo.activePlugin._retryLog:  # noqa
-                    indigo.activePlugin._retryLog[osaname] += 1  # noqa
-                    if indigo.activePlugin._retryLog[osaname] >= errorHandling:  # noqa
+                if osa_name in indigo.activePlugin._retryLog:  # noqa
+                    indigo.activePlugin._retryLog[osa_name] += 1  # noqa
+                    if indigo.activePlugin._retryLog[osa_name] >= errorHandling:  # noqa
                         core.logger(
-                            errLog=f'applescript {osaname} failed after {indigo.activePlugin._retryLog[osaname]}'  # noqa
-                                   f'retry because {osaerror}'
+                            errLog=f'applescript {osa_name} failed after {indigo.activePlugin._retryLog[osa_name]}'  # noqa
+                                   f'retry because {osa_error}'
                         )
                         return None
                 else:
-                    indigo.activePlugin._retryLog[osaname] = 1  # noqa
-                indigo.activePlugin._errorMsg[osaname] = osaerror  # noqa
-                core.logger(traceLog=f'applescript {osaname} failed {indigo.activePlugin._retryLog[osaname]} time')  # noqa
+                    indigo.activePlugin._retryLog[osa_name] = 1  # noqa
+                indigo.activePlugin._errorMsg[osa_name] = osa_error  # noqa
+                core.logger(traceLog=f'applescript {osa_name} failed {indigo.activePlugin._retryLog[osa_name]} time')  # noqa
             else:
-                if errorHandling.search(osaerror) is None:
-                    core.logger(errLog=f'applescript {osaname} failed because {osaerror}')
+                if errorHandling.search(osa_error) is None:
+                    core.logger(errLog=f'applescript {osa_name} failed because {osa_error}')
                 else:
-                    core.logger(msgLog=f'warning on applescript {osaname} : {osaerror}', isMain=False)
+                    core.logger(msgLog=f'warning on applescript {osa_name} : {osa_error}', isMain=False)
 
             # continue the process with a dummy value
-            osavalues = '\n'
+            osa_values = '\n'
     else:
         # a success sets the # retries to 0
         if isinstance(errorHandling, int):
-            if osaname in indigo.activePlugin._retryLog:  # noqa
-                if 0 < indigo.activePlugin._retryLog[osaname] < errorHandling:  # noqa
+            if osa_name in indigo.activePlugin._retryLog:  # noqa
+                if 0 < indigo.activePlugin._retryLog[osa_name] < errorHandling:  # noqa
                     core.logger(
-                        msgLog=f'warning on applescript {osaname} : {indigo.activePlugin._errorMsg[osaname]}',  # noqa
+                        msgLog=f'warning on applescript {osa_name} : {indigo.activePlugin._errorMsg[osa_name]}',  # noqa
                         isMain=False
                     )
-                indigo.activePlugin._retryLog[osaname] = 0  # noqa
-                indigo.activePlugin._errorMsg[osaname] = ''  # noqa
+                indigo.activePlugin._retryLog[osa_name] = 0  # noqa
+                indigo.activePlugin._errorMsg[osa_name] = ''  # noqa
 
     # return value without error
     if akeys is None:
         # return text if no keys
-        osavalues = core.strutf8(osavalues[:-1])
+        osa_values = core.str_utf8(osa_values[:-1])
     else:
         # return list of values
-        osavalues = dict(zip(akeys, (osavalues[:-1]).split('||')))
-        for thekey, thevalue in osavalues.items():
-            if thevalue in _valueConvertDict:
-                thevalue = _valueConvertDict[thevalue]
-            osavalues[thekey] = core.strutf8(thevalue)
+        osa_values = dict(zip(akeys, (osa_values[:-1]).split('||')))
+        for key, value in osa_values.items():
+            if value in _valueConvertDict:
+                value = _valueConvertDict[value]
+            osa_values[key] = core.str_utf8(value)
 
-    core.logger(traceRaw=f'returned from applescript: {osavalues}', traceLog=f'returned from applescript {osaname}')
+    core.logger(traceRaw=f'returned from applescript: {osa_values}', traceLog=f'returned from applescript {osa_name}')
 
-    return osavalues
+    return osa_values
