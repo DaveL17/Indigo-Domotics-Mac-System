@@ -49,7 +49,7 @@ pStatusDict = {
     'R': 'running',               # runnable process
     'S': 'running',               # process that is sleeping for less than about 20 seconds
     'T': 'stopped',               # stopped process
-    'U': 'uninterruptible wait',  # process in uninterruptible wait
+    'U': 'uninterruptible',       # process in uninterruptible wait
     '': 'waiting',                #
     'Z': 'zombie'                 # dead process (a “zombie”)
 }
