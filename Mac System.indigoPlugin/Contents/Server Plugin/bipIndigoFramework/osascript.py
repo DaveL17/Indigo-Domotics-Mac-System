@@ -33,39 +33,44 @@ _valueConvertDict = {'True': True, 'true': True, 'False': False, 'false': False}
 
 ########################################
 def init():
-    """ Initiate special applescript error handling
-    """
+    """ Initiate special applescript error handling """
     indigo.activePlugin._retryLog = {}
     indigo.activePlugin._errorMsg = {}
 
 
 ########################################
+# def run(ascript: str, akeys: list = None, errorHandling=None):
 def run(ascript, akeys=None, errorHandling=None):
     """ Calls applescript script and returns the result as a python dictionary
 
-        Args:
-            ascript: applescript as text
-            akeys: list of keys, ordered the same way that output data of the applescript,
-                   or None
-            errorHandling : a compiled regular expression matching errors to ignore
-                    or number of retry (integer)
-                    or None if no special management
-        Returns:
-            python dictionary of the states names and values,
-            or string returned by the script is akeys is None,
-            or None if error
+        :param ascript: applescript as text
+        :param akeys: list of keys, ordered the same way that output data of the applescript,
+                           or None
+        :param errorHandling: a compiled regular expression matching errors to ignore
+                                 or number of retry (integer)
+                                 or None if no special management
+        :returns osa_values: python dictionary of the states names and values,
+                                  or string returned by the script is akeys is None,
+                                  or None if error
     """
 
     osa_name = ascript.splitlines()[0]
     core.logger(
-        traceRaw=f'going to call applescript {ascript}',
-        traceLog=f'going to call applescript {osa_name}'
+        trace_log=f'going to call applescript {osa_name}',
+        trace_raw=f'going to call applescript {ascript}'
     )
 
+    # Send the script
     with subprocess.Popen(
-        ['osascript', '-e', ascript], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True) as osa:
+            ['osascript', '-e', ascript], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True) as osa:
         indigo.activePlugin.sleep(0.25)
         osa_values, osa_error = osa.communicate()
+
+    if len(osa_error) > 0:
+        core.logger(
+                    trace_log=f'warning: applescript {osa_name} error {osa_error}',
+                )
+        return False
 
     # error management
     if len(osa_error) > 0:
@@ -80,37 +85,37 @@ def run(ascript, akeys=None, errorHandling=None):
                 filtered_error = filtered_error + line + '\n'
         if filtered_error > '':
             core.logger(
-                traceLog=f'warning: applescript {osa_name} error filtered as not significant',
-                traceRaw=f'warning: applescript {osa_name} following error filtered: {filtered_error[:-1]}'
+                trace_log=f'warning: applescript {osa_name} error filtered as not significant',
+                trace_raw=f'warning: applescript {osa_name} following error filtered: {filtered_error[:-1]}'
             )
 
     # test if error
     if len(osa_error) > 0:
         osa_error = osa_error[:-1]
         if errorHandling is None:
-            core.logger(traceLog='no error handling', errLog=f'applescript {osa_name} failed because {osa_error}')
+            core.logger(trace_log='no error handling', err_log=f'applescript {osa_name} failed because {osa_error}')
             return None
         else:
-            core.logger(traceLog=f'applescript {osa_name} error handling {type(errorHandling)} because {osa_error}')
+            core.logger(trace_log=f'applescript {osa_name} error handling {type(errorHandling)} because {osa_error}')
             if isinstance(errorHandling, int):
                 # test if dictionary exists
                 if osa_name in indigo.activePlugin._retryLog:  # noqa
                     indigo.activePlugin._retryLog[osa_name] += 1  # noqa
                     if indigo.activePlugin._retryLog[osa_name] >= errorHandling:  # noqa
                         core.logger(
-                            errLog=f'applescript {osa_name} failed after {indigo.activePlugin._retryLog[osa_name]}'  # noqa
-                                   f'retry because {osa_error}'
+                            err_log=f'applescript {osa_name} failed after {indigo.activePlugin._retryLog[osa_name]}'  # noqa
+                                    f'retry because {osa_error}'
                         )
                         return None
                 else:
                     indigo.activePlugin._retryLog[osa_name] = 1  # noqa
                 indigo.activePlugin._errorMsg[osa_name] = osa_error  # noqa
-                core.logger(traceLog=f'applescript {osa_name} failed {indigo.activePlugin._retryLog[osa_name]} time')  # noqa
+                core.logger(trace_log=f'applescript {osa_name} failed {indigo.activePlugin._retryLog[osa_name]} time')  # noqa
             else:
                 if errorHandling.search(osa_error) is None:
-                    core.logger(errLog=f'applescript {osa_name} failed because {osa_error}')
+                    core.logger(err_log=f'applescript {osa_name} failed because {osa_error}')
                 else:
-                    core.logger(msgLog=f'warning on applescript {osa_name} : {osa_error}', isMain=False)
+                    core.logger(msg_log=f'warning on applescript {osa_name} : {osa_error}', is_main=False)
 
             # continue the process with a dummy value
             osa_values = '\n'
@@ -120,8 +125,8 @@ def run(ascript, akeys=None, errorHandling=None):
             if osa_name in indigo.activePlugin._retryLog:  # noqa
                 if 0 < indigo.activePlugin._retryLog[osa_name] < errorHandling:  # noqa
                     core.logger(
-                        msgLog=f'warning on applescript {osa_name} : {indigo.activePlugin._errorMsg[osa_name]}',  # noqa
-                        isMain=False
+                        msg_log=f'warning on applescript {osa_name} : {indigo.activePlugin._errorMsg[osa_name]}',  # noqa
+                        is_main=False
                     )
                 indigo.activePlugin._retryLog[osa_name] = 0  # noqa
                 indigo.activePlugin._errorMsg[osa_name] = ''  # noqa
@@ -138,6 +143,8 @@ def run(ascript, akeys=None, errorHandling=None):
                 value = _valueConvertDict[value]
             osa_values[key] = core.str_utf8(value)
 
-    core.logger(traceRaw=f'returned from applescript: {osa_values}', traceLog=f'returned from applescript {osa_name}')
+        core.logger(
+            trace_log=f'returned from applescript {osa_name}',
+            trace_raw=f'returned from applescript: {osa_values}')
 
     return osa_values

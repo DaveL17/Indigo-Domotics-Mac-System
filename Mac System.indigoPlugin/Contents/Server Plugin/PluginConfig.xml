@@ -1,9 +1,5 @@
 <?xml version="1.0"?>
 <PluginConfig>
-	<!-- You can add a SupportURL element inside here if you want a context-sensitive help link on the config UI -
-	otherwise it will just link to the URL specified in the Info.plist. -->
-	<!-- <SupportURL></SupportURL> -->
-
 	<Field id="infoLabel" type="label">
 		<Label>macOS System Plugin
 Developed by Bernard Philippe (bip.philippe)

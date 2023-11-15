@@ -78,6 +78,9 @@
                 - credit: kmarkley : [https://github.com/kmarkley/Indigo-Domotics-Mac-System]
                   - fix grep term for extraneous args in ps
                   - updates .gitignore
+    Rev 3.0.4 : XXXXX by DaveL17  202311 XX TODO: update date
+                - Fixes bug in applescript commands that used comments
+                - Fixes references to Indigo forums
 """
 ####################################################################################
 
@@ -121,24 +124,26 @@ class Plugin(indigo.PluginBase):
         # first read debug flags - before any logging
         core.debug_flags(self.pluginPrefs)
         # startup call
-        core.logger(traceLog='startup called')
+        core.logger(trace_log='startup called')
         interface.init()
         corethread.init()
         core.dumppluginproperties()
 
-        core.logger(traceLog='end of startup')
+        core.logger(trace_log='end of startup')
 
-    def shutdown(self):
+    @staticmethod
+    def shutdown():
         """ Plugin shut down """
-        core.logger(traceLog='shutdown called')
+        core.logger(trace_log='shutdown called')
         core.dumppluginproperties()
         # do some cleanup here
-        core.logger(traceLog='end of shutdown')
+        core.logger(trace_log='end of shutdown')
 
     ######################
-    def device_start_comm(self, dev):
+    @staticmethod
+    def device_start_comm(dev):
         """ Device communication started """
-        core.logger(traceLog=f'"{dev.name}" device_start_comm called ({dev.id:d} - {dev.deviceTypeId})')
+        core.logger(trace_log=f'"{dev.name}" device_start_comm called ({dev.id:d} - {dev.deviceTypeId})')
         core.dumpdeviceproperties(dev)
         core.dumpdevicestates(dev)
 
@@ -156,39 +161,37 @@ class Plugin(indigo.PluginBase):
             }
             core.upgradeDeviceProperties(dev, u_dict)
 
-        core.logger(traceLog=f'end of "{dev.name}" device_start_comm')
+        core.logger(trace_log=f'end of "{dev.name}" device_start_comm')
 
-    def device_stop_comm(self, dev):
+    @staticmethod
+    def device_stop_comm(dev):
         """ Device communication stopped """
-        core.logger(traceLog=f'device_stop_comm called: {dev.name} ({dev.id:d} - {dev.deviceTypeId})')
+        core.logger(trace_log=f'device_stop_comm called: {dev.name} ({dev.id:d} - {dev.deviceTypeId})')
         core.dumpdeviceproperties(dev)
         core.dumpdevicestates(dev)
-        core.logger(traceLog=f'end of "{dev.name}" device_stop_comm')
+        core.logger(trace_log=f'end of "{dev.name}" device_stop_comm')
 
     ########################################
     # Update thread
     ########################################
     def run_concurrent_thread(self):
         """ """
-        core.logger(traceLog='run_concurrent_thread initiated')
+        core.logger(trace_log='run_concurrent_thread initiated')
 
         # init spinner timer
-        try:
-            ps_value = int(self.pluginPrefs['disksleepTime'])
-        except:
-            ps_value = 0
+        ps_value = int(self.pluginPrefs.get('disksleepTime', 0))
 
         if ps_value > 0:
             ps_value = (ps_value-1)*60
         else:
             ps_value = 600
-        next_disk_spin = corethread.dialogTimer('Next disk spin', ps_value)
+        next_disk_spin = corethread.DialogTimer('Next disk spin', ps_value)
 
         # init full data read timer for volumes
-        read_volume_data = corethread.dialogTimer('Read volume data', 60)
+        read_volume_data = corethread.DialogTimer('Read volume data', 60)
 
         # init full data read timer for applications
-        read_application_data = corethread.dialogTimer('Read application data', 60, 30)
+        read_application_data = corethread.DialogTimer('Read application data', 60, 30)
 
         # loop
         try:
@@ -204,7 +207,7 @@ class Plugin(indigo.PluginBase):
                     )
                     try:
                         ps_value = int(ps_value)
-                    except:
+                    except ValueError:
                         ps_value = 0
                     # set property and timer if needed
                     updates_dict = core.updatepluginprops({'disksleepTime': ps_value})
@@ -222,8 +225,7 @@ class Plugin(indigo.PluginBase):
                     ########################
                     if ((dev.deviceTypeId in ('bip.ms.application', 'bip.ms.helper', 'bip.ms.daemon')) and
                             dev.configured and
-                            dev.enabled
-                    ):
+                            dev.enabled):
                         # states
                         (success, values_dict) = interface.getProcessStatus(dev, values_dict)
                         # update
@@ -284,7 +286,7 @@ class Plugin(indigo.PluginBase):
                 corethread.sleepNext(10)  # in seconds
         except self.StopThread:
             # do any cleanup here
-            core.logger(traceLog='end of run_concurrent_thread')
+            core.logger(trace_log='end of run_concurrent_thread')
 
     ########################################
     # Relay / Dimmer Action callback
@@ -292,13 +294,13 @@ class Plugin(indigo.PluginBase):
     def actionControlDimmerRelay(self, action, dev):
         """ """
         # some generic controls and logs
-        theactionid = relaydimmer.start_action(dev, action)
+        action_id = relaydimmer.start_action(dev, action)
 
-        if theactionid is None:
+        if action_id is None:
             # no action to do
             return
 
-        if theactionid == indigo.kDeviceGeneralAction.RequestStatus:
+        if action_id == indigo.kDeviceGeneralAction.RequestStatus:
             corethread.setUpdateRequest(dev)
             return
 
@@ -307,34 +309,28 @@ class Plugin(indigo.PluginBase):
         ########################
         # status update will be done by run_concurrent_thread
         if dev.deviceTypeId in ('bip.ms.application', 'bip.ms.helper', 'bip.ms.daemon'):
-            if theactionid == indigo.kDimmerRelayAction.TurnOn:
+            if action_id == indigo.kDimmerRelayAction.TurnOn:
                 shellscript.run(dev.pluginProps['ApplicationStartPathName'])
 
-            elif theactionid == indigo.kDimmerRelayAction.TurnOff:
+            elif action_id == indigo.kDimmerRelayAction.TurnOff:
                 if dev.pluginProps['forceQuit']:
                     shellscript.run(f"kill {dev.states['ProcessID']}")
                 else:
-                    osascript.run(f"(* Tell to quit *){dev.pluginProps['ApplicationStopPathName']}")
+                    osascript.run(f"{dev.pluginProps['ApplicationStopPathName']}")
 
         ##########
         # Volume device
         ########################
         elif dev.deviceTypeId == 'bip.ms.volume':
             # status update will be done by run_concurrent_thread
-            if (theactionid == indigo.kDimmerRelayAction.TurnOn) and (dev.states['VStatus'] == 'notmounted'):
-                shellscript.run(
-                    pscript=f"/usr/sbin/diskutil mount {dev.states['VolumeDevice']}"
-                )
+            if (action_id == indigo.kDimmerRelayAction.TurnOn) and (dev.states['VStatus'] == 'notmounted'):
+                shellscript.run(pscript=f"/usr/sbin/diskutil mount {dev.states['VolumeDevice']}")
 
-            elif theactionid == indigo.kDimmerRelayAction.TurnOff:
+            elif action_id == indigo.kDimmerRelayAction.TurnOff:
                 if dev.pluginProps['forceQuit']:
-                    shellscript.run(
-                        pscript=f"/usr/sbin/diskutil umount force {dev.states['VolumeDevice']}"
-                    )
+                    shellscript.run(pscript=f"/usr/sbin/diskutil umount force {dev.states['VolumeDevice']}")
                 else:
-                    shellscript.run(
-                        pscript=f"/usr/sbin/diskutil umount {dev.states['VolumeDevice']}"
-                    )
+                    shellscript.run(pscript=f"/usr/sbin/diskutil umount {dev.states['VolumeDevice']}")
 
     ########################################
     # other callbacks
@@ -343,31 +339,31 @@ class Plugin(indigo.PluginBase):
         """ Close window action item"""
         self.close_window_action(indigo.devices[action.deviceId])
 
-    def close_window_action(self, dev):
+    @staticmethod
+    def close_window_action(dev):
         """ Close window action """
-        core.logger(traceLog=f'requesting device "{dev.name}" action closewindows')
-        osascript.run(f"(* Tell to close window *){dev.pluginProps['windowcloseScript']}")
+        core.logger(trace_log=f'requesting device "{dev.name}" action closewindows')
+        osascript.run(f"{dev.pluginProps['windowcloseScript']}")
 
     ########################################
     # Prefs UI methods (works with PluginConfig.xml):
     ######################
 
-    # Validate the pluginConfig window after user hits OK
-    # Returns False on failure, True on success
-    #
-    def validate_prefs_config_ui(self, values_dict):
+    @staticmethod
+    def validate_prefs_config_ui(values_dict):
         """ Validate plugin config prefs """
-        core.logger(traceLog='validating Prefs called')
+        core.logger(trace_log='validating Prefs called')
 
         # manage debug flag
         values_dict = core.debug_flags(values_dict)
 
-        core.logger(traceLog='end of validating Prefs')
+        core.logger(trace_log='end of validating Prefs')
         return True, values_dict
 
-    def validate_device_config_ui(self, values_dict, type_id, dev_id):
+    @staticmethod
+    def validate_device_config_ui(values_dict, type_id, dev_id):
         """ Validate device config prefs """
-        core.logger(traceLog=f'validating Device Config called for: ({dev_id:d} - {type_id})')
+        core.logger(trace_log=f'validating Device Config called for: ({dev_id:d} - {type_id})')
         core.dumpdict(values_dict, 'input value dict %s is %s', level=core.MSG_STATES_DEBUG)
 
         # applications and helpers
@@ -415,5 +411,5 @@ class Plugin(indigo.PluginBase):
                 )
 
         core.dumpdict(values_dict, 'output value dict %s is %s', level=core.MSG_STATES_DEBUG)
-        core.logger(traceLog='end of validating Device Config')
+        core.logger(trace_log='end of validating Device Config')
         return True, values_dict

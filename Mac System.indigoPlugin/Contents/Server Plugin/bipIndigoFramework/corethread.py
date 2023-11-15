@@ -33,41 +33,40 @@ def init():
 
 
 ########################################
-def setUpdateRequest(dev, nbTime=1):
+def setUpdateRequest(dev: indigo.Device, nb_time: int = 1):
     """ set the device states to be updated
 
-    Args:
-        nbTime: ?
-        dev: current device
+        :param indigo.Device dev: current device
+        :param int nb_time: ?
+        :returns:
     """
-    core.logger(traceLog=f'Device "{dev.name}" has {nbTime} update requests stacked')
-    indigo.activePlugin._requestedUpdate[dev.id] = nbTime  # noqa
+    core.logger(trace_log=f'Device "{dev.name}" has {nb_time} update requests stacked')
+    indigo.activePlugin._requestedUpdate[dev.id] = nb_time  # noqa
 
 
 ########################################
-def isUpdateRequested(dev):
+def isUpdateRequested(dev: indigo.Device):
     """ Test is the device states need to be updated
 
-        Args:
-            dev: current device
-        Returns:
-            True is updateRequested
-        """
+        :param indigo.Device dev: current device
+        :returns bool: True is updateRequested
+
+    """
     if dev.id in indigo.activePlugin._requestedUpdate:  # noqa
         if indigo.activePlugin._requestedUpdate[dev.id] > 0:  # noqa
             indigo.activePlugin._requestedUpdate[dev.id] -= 1  # noqa
-            core.logger(traceLog=f'Device "{dev.name}" is going to process an update request')
+            core.logger(trace_log=f'Device "{dev.name}" is going to process an update request')
             return True
 
     return False
 
 
 ########################################
-def sleepNext(sleep_time):
+def sleepNext(sleep_time: int):
     """ Calculate sleep time according main dialog pace
 
-        Args:
-            sleep_time: time in seconds between two dialog calls
+        :param int sleep_time: time in seconds between two dialog calls
+        :returns:
     """
     next_delay = sleep_time - (time.time() - indigo.activePlugin.wakeup)
 
@@ -75,70 +74,68 @@ def sleepNext(sleep_time):
     if next_delay < 1:
         next_delay = 0.5
 
-    core.logger(traceLog=f'going to sleep for {next_delay} seconds')
+    core.logger(trace_log=f'going to sleep for {next_delay} seconds')
     indigo.activePlugin.sleep(next_delay)
 
 
 def sleepWake():
-    """ Take the time before one ConcurrentThread run
-    """
+    """ Take the time before one ConcurrentThread run """
     indigo.activePlugin.wakeup = time.time()
 
 
 ########################################
-# class dialogTimer(object):
-class dialogTimer():
+# class DialogTimer(object):
+class DialogTimer:
     """
     Timer to be used in run_concurrent_thread for dialogs that needs to be made less often that the
     run_concurrent_thread pace
     """
-    def __init__(self, timer_name, interval, initial_interval=0):
+    def __init__(self, timer_name: str, interval: int, initial_interval: int = 0):
         """ Constructor
 
-            Args:
-                timer_name : name of the timer (for logging use)
-                interval: interval in seconds
-                initial_interval : first interval in seconds (ignored if 0)
-            Returns:
-                dialogTimer class instance
+            :param str timer_name : name of the timer (for logging use)
+            :param int interval: interval in seconds
+            :param int initial_interval : first interval in seconds (ignored if 0)
+            :returns DialogTimer class instance
         """
-        self._timer     = None
-        self.timername = timer_name
-        self.initialinterval = initial_interval
-        self.interval   = interval
+        self._timer = None
+        self.timer_name = timer_name
+        self.initial_interval = initial_interval
+        self.interval = interval
         self.timeElapsed = True
-        core.logger(traceLog=f'initiating dialog timer "{self.timername}" on a {interval} seconds pace')
+        core.logger(trace_log=f'initiating dialog timer "{self.timer_name}" on a {interval} seconds pace')
         self._run()
 
     def __del__(self):
-        core.logger(traceLog=f'deleting dialog timer "{self.timername}"')
+        """ """
+        core.logger(trace_log=f'deleting dialog timer "{self.timer_name}"')
         self._timer.cancel()
 
     def _run(self):
-        core.logger(traceLog=f'time elapsed for dialog timer "{self.timername}"')
+        """ """
+        core.logger(trace_log=f'time elapsed for dialog timer "{self.timer_name}"')
         self.timeElapsed = True
-        if self.initialinterval > 0:
-            self._timer = Timer(self.initialinterval, self._run)
-            self.initialinterval = 0
+        if self.initial_interval > 0:
+            self._timer = Timer(self.initial_interval, self._run)
+            self.initial_interval = 0
         else:
             self._timer = Timer(self.interval, self._run)
         self._timer.start()
 
-    def changeInterval(self, interval):
+    def changeInterval(self, interval: int):
         """ Change interval value - restart the timer to take the new value in account
 
-        Args:
-            interval: interval in seconds
+            :param int interval: interval in seconds
+            :returns:
         """
         self.interval = interval
-        core.logger(traceLog=f'restarting with new timing value {interval} for dialog timer "{self.timername}"')
+        core.logger(trace_log=f'restarting with new timing value {interval} for dialog timer "{self.timer_name}"')
         self._timer.cancel()
         self._run()
 
     def doNow(self):
-        """ Stop the current timing and set isTime to true
-        """
-        core.logger(traceLog=f'forced time elapsed for dialog timer "{self.timername}"')
+        """ Stop the current timing and set isTime to true """
+        core.logger(trace_log=f'forced time elapsed for dialog timer "{self.timer_name}"')
         self._timer.cancel()
         self._run()
 

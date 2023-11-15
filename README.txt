@@ -42,4 +42,4 @@ The kind of scenarios I use are :
    - When iTunes device is off, a trigger unmount the disk volume (i.e. sets disk volume device to off),
    - When the disk volume is off, then the raid drive relay device is set off.
 
-More on the indigo Forum : http://forums.indigodomo.com/viewtopic.php?f=162&t=13678
+More on the indigo Forum : https://forums.indigodomo.com/viewforum.php?f=162

@@ -52,7 +52,9 @@ def run(pscript, rule=None, akeys=None):
 
     log_script = pscript.split('|')[0]
 
-    core.logger(traceRaw=f'going to call shell {pscript}', traceLog=f'going to call shell {log_script}...')
+    core.logger(
+        trace_log=f'going to call shell {log_script}...',
+        trace_raw=f'going to call shell {pscript}')
 
     with subprocess.Popen(
         pscript, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, close_fds=True) as proc:
@@ -62,7 +64,7 @@ def run(pscript, rule=None, akeys=None):
     if len(p_error) > 0:
         # test if error
         err = p_error.decode("utf-8")  # we only need to decode if there's something to see
-        core.logger(errLog=f'shell script failed because {err}')
+        core.logger(err_log=f'shell script failed because {err}')
         return None
 
     if akeys is None:
@@ -98,9 +100,8 @@ def run(pscript, rule=None, akeys=None):
                 return_value[key] = ''
 
     core.logger(
-        traceRaw=f'returned from shell: {core.formatdump(return_value)}',
-        traceLog=f'returned from shell {log_script}...'
+        trace_log=f'returned from shell {log_script}...',
+        trace_raw=f'returned from shell: {core.formatdump(return_value)}'
     )
 
-    # indigo.server.log(f"shellscript > return value: {return_value}", type="debug")
     return return_value
